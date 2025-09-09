@@ -16,8 +16,8 @@ exports.create = async (req, res, next) => {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { name, description, imageUrl, price } = req.body;
-        const created = await Pizza.create({ name, description, imageUrl, price });
+        const { name, description, imageUrl, price, dailyPizza } = req.body;
+        const created = await Pizza.create({ name, description, imageUrl, price, dailyPizza });
         // 201 Created
         return res.status(201).json(created);
     } catch (err) {
@@ -60,8 +60,8 @@ exports.update = async (req, res, next) => {
         const id = Number(req.params.id);
         if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid pizza id' });
 
-        const { name, description, imageUrl, price } = req.body;
-        const updated = await Pizza.update(id, { name, description, imageUrl, price });
+        const { name, description, imageUrl, price, dailyPizza } = req.body;
+        const updated = await Pizza.update(id, { name, description, imageUrl, price, dailyPizza });
         if (!updated) return res.status(404).json({ error: 'Pizza not found' }); // 404 Not Found
 
         return res.status(200).json(updated);
