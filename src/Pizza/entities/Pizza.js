@@ -1,8 +1,9 @@
+// Pizza/entities/Pizza.js
 const db = require('../config/database');
 
 class Pizza {
 
-     // Enlève l'option de dailyPizza à toutes les pizzas
+    // Remove the dailyPizza option from all pizzas
     static unsetDailyPizza(excludeId = null) {
         return new Promise((resolve, reject) => {
             let sql, params;
@@ -21,9 +22,9 @@ class Pizza {
         });
     }
 
-    // Créer une nouvelle pizza
+    // Create a new pizza
     static async create({ name, description, imageUrl, price, dailyPizza }) {
-        // Désactiver toutes les dailyPizza quand la nouvelle pizza est dailyPizza
+        // Disable all other dailyPizza entries when the new pizza is set as dailyPizza
         try {
             if (dailyPizza === 1 || dailyPizza === true) {
                 await Pizza.unsetDailyPizza();
@@ -44,7 +45,7 @@ class Pizza {
         }
     }
 
-    // Récupèrer toutes les pizzas en ordre du plus récent au moins récent
+    // Retrieve all pizzas ordered from most recent to oldest
     static findAll() {
         const sql = `SELECT * FROM pizzas ORDER BY id DESC`;
         return new Promise((resolve, reject) => {
@@ -55,7 +56,7 @@ class Pizza {
         });
     }
 
-    // Récupèrer une pizza par son id.
+    // Retrieve a pizza by its id
     static findById(id) {
         const sql = `SELECT * FROM pizzas WHERE id = ?`;
         return new Promise((resolve, reject) => {
@@ -66,10 +67,9 @@ class Pizza {
         });
     }
 
-
-    // Mettre à jour une pizza
+    // Update an existing pizza
     static async update(id, { name, description, imageUrl, price, dailyPizza }) {
-        // Désactiver toutes les dailyPizza quand on en rajoute une nouvelle dailyPizza
+        // Disable all other dailyPizza entries when updating one as dailyPizza
         try {
             if (dailyPizza === 1 || dailyPizza === true) {
                 await Pizza.unsetDailyPizza(id);
@@ -90,7 +90,7 @@ class Pizza {
             return new Promise((resolve, reject) => {
                 db.run(sql, params, function (err) {
                     if (err) return reject(err);
-                    if (this.changes === 0) return resolve(null); // aucune pizza trouvée
+                    if (this.changes === 0) return resolve(null); // no pizza found
                     Pizza.findById(id).then(resolve).catch(reject);
                 });
             });
@@ -99,7 +99,7 @@ class Pizza {
         }
     }
 
-    // Supprimer une pizza
+    // Delete a pizza
     static delete(id) {
         const sql = `DELETE FROM pizzas WHERE id = ?`;
         return new Promise((resolve, reject) => {

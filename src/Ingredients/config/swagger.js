@@ -1,19 +1,19 @@
-// Pizza/config/swagger.js
+// Ingredients/config/swagger.js
 const swaggerJSDoc = require('swagger-jsdoc');
 
 const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Pizzas API',
+            title: 'Ingredients API',
             version: '1.0.0',
-            description: 'RESTful API for pizza management (SQLite, Express).'
+            description: 'RESTful API for ingredient management (SQLite, Express).'
         },
         servers: [
             { url: 'http://localhost:3000', description: 'Local dev server' }
         ]
     },
-    apis: ['./src/Pizza/routes/*.js', './src/Pizza/controllers/*.js']
+    apis: ['./src/Ingredients/routes/*.js', './src/Ingredients/controllers/*.js']
 };
 
 const swaggerSpec = swaggerJSDoc(options);
