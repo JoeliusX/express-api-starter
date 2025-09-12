@@ -8,15 +8,15 @@ class Pizza {
             let sql, params;
             if (excludeId) {
                 sql = `UPDATE pizzas SET dailyPizza = 0 WHERE dailyPizza = 1 AND id != ?`;
-                params = [excludeId]; // exclut la pizza en cours de modification
+                params = [excludeId];
             } else {
                 sql = `UPDATE pizzas SET dailyPizza = 0 WHERE dailyPizza = 1`;
-                params = []; // toutes les pizzas du jour passent à 0
+                params = [];
             }
 
             db.run(sql, params, function (err) {
                 if (err) return reject(err);
-                resolve(this.changes); // retourne le nombre de lignes modifiées
+                resolve(this.changes);
             });
         });
     }
@@ -36,7 +36,6 @@ class Pizza {
             return new Promise((resolve, reject) => {
                 db.run(sql, params, function (err) {
                     if (err) return reject(err);
-                    // Récupère la pizza qu'on vient d'insérer via son id auto-incrémenté
                     Pizza.findById(this.lastID).then(resolve).catch(reject);
                 });
             });
@@ -106,7 +105,7 @@ class Pizza {
         return new Promise((resolve, reject) => {
             db.run(sql, [id], function (err) {
                 if (err) return reject(err);
-                resolve(this.changes); // nombre de lignes supprimées
+                resolve(this.changes);
             });
         });
     }
