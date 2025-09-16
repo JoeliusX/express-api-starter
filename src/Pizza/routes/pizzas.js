@@ -1,7 +1,7 @@
 // Pizza/routes/pizzas.js
 const express = require('express');
 const { body, param } = require('express-validator');
-const pizzaController = require('../controllers/pizzaController');
+const pizzaController = require('../controllers/pizza');
 
 const router = express.Router();
 
@@ -105,9 +105,7 @@ const router = express.Router();
  *         description: Pizza not found
  */
 
-/**
- * Validation rules
- */
+//Validation rules
 const createAndUpdateValidations = [
     body('name').isString().notEmpty().withMessage('name is required'),
     body('description').optional().isString(),

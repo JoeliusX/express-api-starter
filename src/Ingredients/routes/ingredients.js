@@ -1,7 +1,7 @@
 // Ingredients/routes/ingredients.js
 const express = require('express');
 const { body, param } = require('express-validator');
-const ingredientController = require('../controllers/ingredientController');
+const ingredientController = require('../controllers/ingredient');
 
 const router = express.Router();
 
@@ -88,9 +88,7 @@ const router = express.Router();
  *         description: Ingredient not found
  */
 
-/**
- * Validation rules
- */
+//Validation rules
 const createAndUpdateValidations = [
     body('name').isString().notEmpty().withMessage('name is required'),
 ];

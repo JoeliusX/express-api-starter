@@ -1,4 +1,4 @@
-// Ingredients/controllers/ingredientController.js
+// Ingredients/controllers/ingredient.js
 const { validationResult } = require('express-validator');
 const Ingredient = require('../entities/Ingredient');
 

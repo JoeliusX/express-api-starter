@@ -43,8 +43,8 @@ class Ingredient {
     static async update(id, { name }) {
         const sql = `
             UPDATE ingredients
-            SET name = COALESCE(?, name),
-            WHERE id = ?
+            SET name = COALESCE(?, name)
+                WHERE id = ?
         `;
         const params = [name, id];
 
@@ -55,6 +55,7 @@ class Ingredient {
                 Ingredient.findById(id).then(resolve).catch(reject);
             });
         });
+
 
 }
 
