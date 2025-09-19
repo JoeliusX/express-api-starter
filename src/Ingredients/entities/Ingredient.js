@@ -1,5 +1,5 @@
 // Ingredients/entities/Ingredient.js
-const db = require('../config/database');
+const db = require('../../config/database');
 
 class Ingredient {
 
@@ -44,23 +44,29 @@ class Ingredient {
         const sql = `
             UPDATE ingredients
             SET name = COALESCE(?, name)
-                WHERE id = ?
+            WHERE id = ?
         `;
         const params = [name, id];
 
         return new Promise((resolve, reject) => {
             db.run(sql, params, function (err) {
                 if (err) return reject(err);
-                if (this.changes === 0) return resolve(null); // no ingredient found
+                // no ingredient found
+                if (this.changes === 0) return resolve(null);
                 Ingredient.findById(id).then(resolve).catch(reject);
             });
         });
+    }
 
+    // Delete an ingredient
+    static async delete(id) {
+        await new Promise((resolve, reject) => {
+            db.run(`DELETE FROM pizza_ingredients WHERE ingredient_id = ?`, [id], function (err) {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
 
-}
-
-    // Delete a ingredient
-    static delete(id) {
         const sql = `DELETE FROM ingredients WHERE id = ?`;
         return new Promise((resolve, reject) => {
             db.run(sql, [id], function (err) {

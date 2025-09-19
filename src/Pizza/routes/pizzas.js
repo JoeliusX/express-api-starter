@@ -189,6 +189,7 @@ const createAndUpdateValidations = [
     body('ingredients').optional().isArray().withMessage('ingredients must be an array of ids')
 ];
 
+// Pizza routes
 router.get('/', pizzaController.findAll);
 router.post('/', createAndUpdateValidations, pizzaController.create);
 router.get('/:id', [param('id').isInt().withMessage('id must be an integer')], pizzaController.findOne);
@@ -196,6 +197,7 @@ router.get('/:id/with-ingredients', [param('id').isInt().withMessage('id must be
 router.put('/:id', [param('id').isInt().withMessage('id must be an integer'), ...createAndUpdateValidations], pizzaController.update);
 router.delete('/:id', [param('id').isInt().withMessage('id must be an integer')], pizzaController.delete);
 
+// Add/remove ingredient routes using table intermédiaire pizza_ingredients
 router.post('/:id/ingredients', [param('id').isInt(), body('ingredientId').isInt()], pizzaController.addIngredient);
 router.delete('/:id/ingredients/:ingredientId', [param('id').isInt(), param('ingredientId').isInt()], pizzaController.removeIngredient);
 

@@ -1,5 +1,6 @@
 // Pizza/entities/Pizza.js
-const db = require('../config/database');
+const db = require('../../config/database');
+const Ingredient = require('../../Ingredients/entities/Ingredient');
 
 class Pizza {
 
@@ -24,43 +25,32 @@ class Pizza {
 
     // Create a new pizza
     static async create({ name, description, imageUrl, price, dailyPizza, ingredients = [] }) {
-        // Disable all other dailyPizza entries when the new pizza is set as dailyPizza
         try {
-            if (dailyPizza === 1 || dailyPizza === true) {
-                await Pizza.unsetDailyPizza();
-            }
+            if (dailyPizza) await Pizza.unsetDailyPizza();
 
-            const sql = `INSERT INTO pizzas (name, description, imageUrl, price, dailyPizza, ingredients, created_at, updated_at)
-                         VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`;
-            const params = [name, description || null, imageUrl || null, price, dailyPizza, JSON.stringify(ingredients)];
+            const sql = `
+                INSERT INTO pizzas (name, description, imageUrl, price, dailyPizza, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+            `;
+            const params = [name, description || null, imageUrl || null, price, dailyPizza || 0];
 
             return new Promise((resolve, reject) => {
-                db.run(sql, params, function (err) {
+                db.run(sql, params, async function(err) {
                     if (err) return reject(err);
-                    Pizza.findById(this.lastID).then(resolve).catch(reject);
+                    const pizzaId = this.lastID;
+
+                    // Add existing ingredients only
+                    for (const ingId of ingredients) {
+                        const ing = await Ingredient.findById(ingId);
+                        if (ing) await Pizza.addIngredient(pizzaId, ingId);
+                    }
+
+                    Pizza.findByIdWithIngredients(pizzaId).then(resolve).catch(reject);
                 });
             });
         } catch (err) {
             throw err;
         }
-    }
-
-    // Retrieve all pizzas ordered from most recent to oldest
-    static findAll() {
-        const sql = `SELECT * FROM pizzas ORDER BY id DESC`;
-        return new Promise((resolve, reject) => {
-            db.all(sql, [], (err, rows) => {
-                if (err) return reject(err);
-                rows.forEach(row => {
-                    try {
-                        row.ingredients = JSON.parse(row.ingredients || "[]");
-                    } catch {
-                        row.ingredients = [];
-                    }
-                });
-                resolve(rows);
-            });
-        });
     }
 
     // Retrieve a pizza by its id
@@ -69,25 +59,47 @@ class Pizza {
         return new Promise((resolve, reject) => {
             db.get(sql, [id], (err, row) => {
                 if (err) return reject(err);
-                if (row) {
-                    try {
-                        row.ingredients = JSON.parse(row.ingredients || "[]");
-                    } catch {
-                        row.ingredients = [];
-                    }
-                }
                 resolve(row || null);
+            });
+        });
+    }
+
+    // Retrieve a pizza by its id including ingredients
+    static async findByIdWithIngredients(id) {
+        const pizza = await Pizza.findById(id);
+        if (!pizza) return null;
+
+        const sql = `
+            SELECT pi.ingredient_id, i.name
+            FROM pizza_ingredients pi
+            JOIN ingredients i ON i.id = pi.ingredient_id
+            WHERE pi.pizza_id = ?
+        `;
+        return new Promise((resolve, reject) => {
+            db.all(sql, [id], (err, rows) => {
+                if (err) return reject(err);
+                pizza.ingredients = rows.map(r => ({ id: r.ingredient_id, name: r.name }));
+                resolve(pizza);
+            });
+        });
+    }
+
+    // Retrieve all pizzas with ingredients
+    static async findAll() {
+        const sql = `SELECT * FROM pizzas ORDER BY id DESC`;
+        return new Promise((resolve, reject) => {
+            db.all(sql, [], async (err, rows) => {
+                if (err) return reject(err);
+                const pizzas = await Promise.all(rows.map(row => Pizza.findByIdWithIngredients(row.id)));
+                resolve(pizzas);
             });
         });
     }
 
     // Update an existing pizza
     static async update(id, { name, description, imageUrl, price, dailyPizza, ingredients }) {
-        // Disable all other dailyPizza entries when updating one as dailyPizza
         try {
-            if (dailyPizza === 1 || dailyPizza === true) {
-                await Pizza.unsetDailyPizza(id);
-            }
+            if (dailyPizza) await Pizza.unsetDailyPizza(id);
 
             const sql = `
                 UPDATE pizzas
@@ -96,26 +108,33 @@ class Pizza {
                     imageUrl = COALESCE(?, imageUrl),
                     price = COALESCE(?, price),
                     dailyPizza = COALESCE(?, dailyPizza),
-                    ingredients = COALESCE(?, ingredients),
                     updated_at = datetime('now')
                 WHERE id = ?
             `;
-            const params = [
-                name,
-                description,
-                imageUrl,
-                price,
-                dailyPizza,
-                ingredients ? JSON.stringify(ingredients) : null,
-                id
-            ];
+            const params = [name, description, imageUrl, price, dailyPizza, id];
 
             return new Promise((resolve, reject) => {
-                db.run(sql, params, function (err) {
+                db.run(sql, params, async function(err) {
                     if (err) return reject(err);
-                    // no pizza found
                     if (this.changes === 0) return resolve(null);
-                    Pizza.findById(id).then(resolve).catch(reject);
+
+                    // Update ingredients if provided
+                    if (Array.isArray(ingredients)) {
+                        // Remove old ingredients
+                        await new Promise((res, rej) => {
+                            db.run(`DELETE FROM pizza_ingredients WHERE pizza_id = ?`, [id], (err) => {
+                                if (err) return rej(err);
+                                res();
+                            });
+                        });
+                        // Add new ingredients
+                        for (const ingId of ingredients) {
+                            const ing = await Ingredient.findById(ingId);
+                            if (ing) await Pizza.addIngredient(id, ingId);
+                        }
+                    }
+
+                    Pizza.findByIdWithIngredients(id).then(resolve).catch(reject);
                 });
             });
         } catch (err) {
@@ -125,9 +144,8 @@ class Pizza {
 
     // Delete a pizza
     static delete(id) {
-        const sql = `DELETE FROM pizzas WHERE id = ?`;
         return new Promise((resolve, reject) => {
-            db.run(sql, [id], function (err) {
+            db.run(`DELETE FROM pizzas WHERE id = ?`, [id], function(err) {
                 if (err) return reject(err);
                 resolve(this.changes);
             });
@@ -137,22 +155,31 @@ class Pizza {
     // Add an ingredient to a pizza
     static async addIngredient(pizzaId, ingredientId) {
         const pizza = await Pizza.findById(pizzaId);
+        const ing = await Ingredient.findById(ingredientId);
         if (!pizza) throw new Error("Pizza not found");
-        let ingredients = pizza.ingredients || [];
-        if (!ingredients.includes(ingredientId)) {
-            ingredients.push(ingredientId);
-        }
+        if (!ing) throw new Error("Ingredient not found");
 
-        return Pizza.update(pizzaId, { ingredients });
+        const sql = `INSERT OR IGNORE INTO pizza_ingredients (pizza_id, ingredient_id) VALUES (?, ?)`;
+        return new Promise((resolve, reject) => {
+            db.run(sql, [pizzaId, ingredientId], async function(err) {
+                if (err) return reject(err);
+                const updatedPizza = await Pizza.findByIdWithIngredients(pizzaId);
+                resolve(updatedPizza);
+            });
+        });
     }
 
     // Remove an ingredient from a pizza
     static async removeIngredient(pizzaId, ingredientId) {
-        const pizza = await Pizza.findById(pizzaId);
-        if (!pizza) throw new Error("Pizza not found");
-        let ingredients = (pizza.ingredients || []).filter(id => id !== ingredientId);
-
-        return Pizza.update(pizzaId, { ingredients });
+        const sql = `DELETE FROM pizza_ingredients WHERE pizza_id = ? AND ingredient_id = ?`;
+        return new Promise((resolve, reject) => {
+            db.run(sql, [pizzaId, ingredientId], async function(err) {
+                if (err) return reject(err);
+                if (this.changes === 0) return resolve(null);
+                const updatedPizza = await Pizza.findByIdWithIngredients(pizzaId);
+                resolve(updatedPizza);
+            });
+        });
     }
 }
 

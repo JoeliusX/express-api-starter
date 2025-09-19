@@ -74,7 +74,7 @@ const router = express.Router();
  *       404:
  *         description: Ingredient not found
  *   delete:
- *     summary: Delete an ingredient by ID
+ *     summary: Delete an ingredient by ID (also removes all pizza associations)
  *     parameters:
  *       - in: path
  *         name: id
