@@ -83,8 +83,12 @@ exports.addIngredient = async (req, res, next) => {
         const ingredient = await Ingredient.findById(ingredientId);
         if (!ingredient) return res.status(400).json({ error: 'Ingredient does not exist' });
 
-        const updated = await Pizza.addIngredient(pizzaId, ingredientId);
-        return res.status(200).json(updated);
+        await Pizza.addIngredient(pizzaId, ingredientId);
+
+        const pizza = await Pizza.findById(pizzaId);
+        pizza.ingredients = await Ingredient.findByPizzaId(pizzaId);
+
+        return res.status(200).json(pizza);
     } catch (err) {
         next(err);
     }
@@ -100,12 +104,14 @@ exports.removeIngredient = async (req, res, next) => {
             return res.status(400).json({ error: 'Invalid id' });
         }
 
-        const updated = await Pizza.removeIngredient(pizzaId, ingredientId);
+        const removed = await Pizza.removeIngredient(pizzaId, ingredientId);
 
-        // ⚡ si la pizza n'existe pas
-        if (!updated) return res.status(404).json({ error: 'Pizza not found' });
+        if (!removed) return res.status(404).json({ error: 'Ingredient not found in pizza' });
 
-        return res.status(200).json(updated);
+        const pizza = await Pizza.findById(pizzaId);
+        pizza.ingredients = await Ingredient.findByPizzaId(pizzaId);
+
+        return res.status(200).json(pizza);
     } catch (err) {
         next(err);
     }
@@ -130,28 +136,9 @@ exports.findOne = async (req, res, next) => {
         const pizza = await Pizza.findById(id);
         if (!pizza) return res.status(404).json({ error: 'Pizza not found' });
 
+        pizza.ingredients = await Ingredient.findByPizzaId(id);
+
         return res.status(200).json(pizza);
-    } catch (err) {
-        next(err);
-    }
-};
-
-// Find one pizza with full ingredient details
-exports.findOneWithIngredients = async (req, res, next) => {
-    try {
-        const id = Number(req.params.id);
-        if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid pizza id' });
-
-        const pizza = await Pizza.findById(id);
-        if (!pizza) return res.status(404).json({ error: 'Pizza not found' });
-
-        const ingredientDetails = [];
-        for (const ingredientId of pizza.ingredients) {
-            const ingredient = await Ingredient.findById(ingredientId);
-            if (ingredient) ingredientDetails.push(ingredient);
-        }
-
-        return res.status(200).json({ ...pizza, ingredients: ingredientDetails });
     } catch (err) {
         next(err);
     }

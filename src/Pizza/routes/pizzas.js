@@ -12,7 +12,7 @@ const router = express.Router();
  *     summary: Retrieve a list of pizzas
  *     responses:
  *       200:
- *         description: A list of pizzas
+ *         description: A list of pizzas with their ingredients
  *   post:
  *     summary: Create a new pizza
  *     requestBody:
@@ -60,7 +60,7 @@ const router = express.Router();
  *           type: integer
  *     responses:
  *       200:
- *         description: A single pizza
+ *         description: A single pizza with its ingredients
  *       404:
  *         description: Pizza not found
  *   put:
@@ -161,24 +161,6 @@ const router = express.Router();
  *         description: Invalid id
  */
 
-/**
- * @openapi
- * /api/pizzas/{id}/with-ingredients:
- *   get:
- *     summary: Get a pizza with detailed ingredients
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Pizza with ingredients details
- *       404:
- *         description: Pizza not found
- */
-
 // Validation rules
 const createAndUpdateValidations = [
     body('name').isString().notEmpty().withMessage('name is required'),
@@ -193,7 +175,6 @@ const createAndUpdateValidations = [
 router.get('/', pizzaController.findAll);
 router.post('/', createAndUpdateValidations, pizzaController.create);
 router.get('/:id', [param('id').isInt().withMessage('id must be an integer')], pizzaController.findOne);
-router.get('/:id/with-ingredients', [param('id').isInt().withMessage('id must be an integer')], pizzaController.findOneWithIngredients);
 router.put('/:id', [param('id').isInt().withMessage('id must be an integer'), ...createAndUpdateValidations], pizzaController.update);
 router.delete('/:id', [param('id').isInt().withMessage('id must be an integer')], pizzaController.delete);
 

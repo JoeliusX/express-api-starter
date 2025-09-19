@@ -39,6 +39,22 @@ class Ingredient {
         });
     }
 
+    // Collect all the ingredients for a pizza
+    static findByPizzaId(pizzaId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT i.id, i.name
+                FROM pizza_ingredients pi
+                JOIN ingredients i ON i.id = pi.ingredient_id
+                WHERE pi.pizza_id = ?
+            `;
+            db.all(sql, [pizzaId], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
     // Update an existing ingredient
     static async update(id, { name }) {
         const sql = `

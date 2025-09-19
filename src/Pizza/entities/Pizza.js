@@ -45,7 +45,7 @@ class Pizza {
                         if (ing) await Pizza.addIngredient(pizzaId, ingId);
                     }
 
-                    Pizza.findByIdWithIngredients(pizzaId).then(resolve).catch(reject);
+                    Pizza.findById(pizzaId).then(resolve).catch(reject);
                 });
             });
         } catch (err) {
@@ -54,32 +54,24 @@ class Pizza {
     }
 
     // Retrieve a pizza by its id
-    static findById(id) {
+    static async findById(id) {
         const sql = `SELECT * FROM pizzas WHERE id = ?`;
         return new Promise((resolve, reject) => {
-            db.get(sql, [id], (err, row) => {
+            db.get(sql, [id], async (err, row) => {
                 if (err) return reject(err);
-                resolve(row || null);
-            });
-        });
-    }
+                if (!row) return resolve(null);
 
-    // Retrieve a pizza by its id including ingredients
-    static async findByIdWithIngredients(id) {
-        const pizza = await Pizza.findById(id);
-        if (!pizza) return null;
-
-        const sql = `
-            SELECT pi.ingredient_id, i.name
-            FROM pizza_ingredients pi
-            JOIN ingredients i ON i.id = pi.ingredient_id
-            WHERE pi.pizza_id = ?
-        `;
-        return new Promise((resolve, reject) => {
-            db.all(sql, [id], (err, rows) => {
-                if (err) return reject(err);
-                pizza.ingredients = rows.map(r => ({ id: r.ingredient_id, name: r.name }));
-                resolve(pizza);
+                const ingSql = `
+                    SELECT pi.ingredient_id, i.name
+                    FROM pizza_ingredients pi
+                    JOIN ingredients i ON i.id = pi.ingredient_id
+                    WHERE pi.pizza_id = ?
+                `;
+                db.all(ingSql, [id], (err2, rows) => {
+                    if (err2) return reject(err2);
+                    row.ingredients = rows.map(r => ({ id: r.ingredient_id, name: r.name }));
+                    resolve(row);
+                });
             });
         });
     }
@@ -90,7 +82,10 @@ class Pizza {
         return new Promise((resolve, reject) => {
             db.all(sql, [], async (err, rows) => {
                 if (err) return reject(err);
-                const pizzas = await Promise.all(rows.map(row => Pizza.findByIdWithIngredients(row.id)));
+
+                const pizzas = await Promise.all(
+                    rows.map(row => Pizza.findById(row.id))
+                );
                 resolve(pizzas);
             });
         });
@@ -134,7 +129,7 @@ class Pizza {
                         }
                     }
 
-                    Pizza.findByIdWithIngredients(id).then(resolve).catch(reject);
+                    Pizza.findById(id).then(resolve).catch(reject);
                 });
             });
         } catch (err) {
@@ -163,7 +158,7 @@ class Pizza {
         return new Promise((resolve, reject) => {
             db.run(sql, [pizzaId, ingredientId], async function(err) {
                 if (err) return reject(err);
-                const updatedPizza = await Pizza.findByIdWithIngredients(pizzaId);
+                const updatedPizza = await Pizza.findById(pizzaId);
                 resolve(updatedPizza);
             });
         });
@@ -176,7 +171,7 @@ class Pizza {
             db.run(sql, [pizzaId, ingredientId], async function(err) {
                 if (err) return reject(err);
                 if (this.changes === 0) return resolve(null);
-                const updatedPizza = await Pizza.findByIdWithIngredients(pizzaId);
+                const updatedPizza = await Pizza.findById(pizzaId);
                 resolve(updatedPizza);
             });
         });
