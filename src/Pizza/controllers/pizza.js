@@ -1,6 +1,7 @@
 // Pizza/controllers/pizza.js
 const { validationResult } = require('express-validator');
 const Pizza = require('../entities/Pizza');
+const axios = require('axios');
 
 exports.create = async (req, res, next) => {
     try {
@@ -9,9 +10,9 @@ exports.create = async (req, res, next) => {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { name, description, imageUrl, price, dailyPizza } = req.body;
+        const { name, description, imageUrl, price, dailyPizza, ingredients } = req.body;
 
-        const created = await Pizza.create({ name, description, imageUrl, price, dailyPizza });
+        const created = await Pizza.create({ name, description, imageUrl, price, dailyPizza, ingredients });
         return res.status(201).json(created);
     } catch (err) {
         next(err);
@@ -51,8 +52,8 @@ exports.update = async (req, res, next) => {
         const id = Number(req.params.id);
         if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid pizza id' });
 
-        const { name, description, imageUrl, price, dailyPizza } = req.body;
-        const updated = await Pizza.update(id, { name, description, imageUrl, price, dailyPizza });
+        const { name, description, imageUrl, price, dailyPizza, ingredients } = req.body;
+        const updated = await Pizza.update(id, { name, description, imageUrl, price, dailyPizza, ingredients });
 
         if (!updated) return res.status(404).json({ error: 'Pizza not found' });
 
@@ -71,6 +72,66 @@ exports.delete = async (req, res, next) => {
         if (deleted === 0) return res.status(404).json({ error: 'Pizza not found' });
 
         return res.status(204).send();
+    } catch (err) {
+        next(err);
+    }
+};
+
+// // Add an ingredient to a pizza
+exports.addIngredient = async (req, res, next) => {
+    try {
+        const pizzaId = Number(req.params.id);
+
+        const ingredientId = Number(req.body.ingredientId);
+        if (Number.isNaN(pizzaId) || Number.isNaN(ingredientId)) {
+            return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        const updated = await Pizza.addIngredient(pizzaId, ingredientId);
+        return res.status(200).json(updated);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Remove an ingredient from a pizza
+exports.removeIngredient = async (req, res, next) => {
+    try {
+        const pizzaId = Number(req.params.id);
+
+        const ingredientId = Number(req.params.ingredientId);
+        if (Number.isNaN(pizzaId) || Number.isNaN(ingredientId)) {
+            return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        const updated = await Pizza.removeIngredient(pizzaId, ingredientId);
+
+        return res.status(200).json(updated);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Get a pizza with full details of its ingredients
+exports.findOneWithIngredients = async (req, res, next) => {
+    try {
+        const id = Number(req.params.id);
+        if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid pizza id' });
+
+        const pizza = await Pizza.findById(id);
+        if (!pizza) return res.status(404).json({ error: 'Pizza not found' });
+
+        const ingredientDetails = [];
+        for (const ingredientId of pizza.ingredients) {
+            try {
+                const response = await axios.get(`http://localhost:3001/api/ingredients/${ingredientId}`);
+                ingredientDetails.push(response.data);
+            } catch (e) {
+                console.warn(`Ingredient ${ingredientId} not found in Ingredients service`);
+            }
+        }
+
+        return res.status(200).json({ ...pizza, ingredients: ingredientDetails });
     } catch (err) {
         next(err);
     }

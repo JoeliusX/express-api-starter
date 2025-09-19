@@ -23,16 +23,16 @@ class Pizza {
     }
 
     // Create a new pizza
-    static async create({ name, description, imageUrl, price, dailyPizza }) {
+    static async create({ name, description, imageUrl, price, dailyPizza, ingredients = [] }) {
         // Disable all other dailyPizza entries when the new pizza is set as dailyPizza
         try {
             if (dailyPizza === 1 || dailyPizza === true) {
                 await Pizza.unsetDailyPizza();
             }
 
-            const sql = `INSERT INTO pizzas (name, description, imageUrl, price, dailyPizza, created_at, updated_at)
-                         VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`;
-            const params = [name, description || null, imageUrl || null, price, dailyPizza];
+            const sql = `INSERT INTO pizzas (name, description, imageUrl, price, dailyPizza, ingredients, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`;
+            const params = [name, description || null, imageUrl || null, price, dailyPizza, JSON.stringify(ingredients)];
 
             return new Promise((resolve, reject) => {
                 db.run(sql, params, function (err) {
@@ -51,6 +51,9 @@ class Pizza {
         return new Promise((resolve, reject) => {
             db.all(sql, [], (err, rows) => {
                 if (err) return reject(err);
+                rows.forEach(row => {
+                    row.ingredients = JSON.parse(row.ingredients || "[]");
+                });
                 resolve(rows);
             });
         });
@@ -62,13 +65,16 @@ class Pizza {
         return new Promise((resolve, reject) => {
             db.get(sql, [id], (err, row) => {
                 if (err) return reject(err);
+                if (row) {
+                    row.ingredients = JSON.parse(row.ingredients || "[]");
+                }
                 resolve(row || null);
             });
         });
     }
 
     // Update an existing pizza
-    static async update(id, { name, description, imageUrl, price, dailyPizza }) {
+    static async update(id, { name, description, imageUrl, price, dailyPizza, ingredients }) {
         // Disable all other dailyPizza entries when updating one as dailyPizza
         try {
             if (dailyPizza === 1 || dailyPizza === true) {
@@ -82,15 +88,25 @@ class Pizza {
                     imageUrl = COALESCE(?, imageUrl),
                     price = COALESCE(?, price),
                     dailyPizza = COALESCE(?, dailyPizza),
+                    ingredients = COALESCE(?, ingredients),
                     updated_at = datetime('now')
                 WHERE id = ?
             `;
-            const params = [name, description, imageUrl, price, dailyPizza, id];
+            const params = [
+                name,
+                description,
+                imageUrl,
+                price,
+                dailyPizza,
+                ingredients ? JSON.stringify(ingredients) : null,
+                id
+            ];
 
             return new Promise((resolve, reject) => {
                 db.run(sql, params, function (err) {
                     if (err) return reject(err);
-                    if (this.changes === 0) return resolve(null); // no pizza found
+                    // no pizza found
+                    if (this.changes === 0) return resolve(null);
                     Pizza.findById(id).then(resolve).catch(reject);
                 });
             });
@@ -108,6 +124,27 @@ class Pizza {
                 resolve(this.changes);
             });
         });
+    }
+
+    // Add an ingredient to a pizza
+    static async addIngredient(pizzaId, ingredientId) {
+        const pizza = await Pizza.findById(pizzaId);
+        if (!pizza) throw new Error("Pizza not found");
+        let ingredients = pizza.ingredients || [];
+        if (!ingredients.includes(ingredientId)) {
+            ingredients.push(ingredientId);
+        }
+
+        return Pizza.update(pizzaId, { ingredients });
+    }
+
+    // Remove an ingredient from a pizza
+    static async removeIngredient(pizzaId, ingredientId) {
+        const pizza = await Pizza.findById(pizzaId);
+        if (!pizza) throw new Error("Pizza not found");
+        let ingredients = (pizza.ingredients || []).filter(id => id !== ingredientId);
+
+        return Pizza.update(pizzaId, { ingredients });
     }
 }
 

@@ -18,9 +18,10 @@ const initSql = `
 CREATE TABLE IF NOT EXISTS pizzas (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  description TEXT,
+  description TEXT, 
   imageUrl TEXT,
   price REAL NOT NULL,
+  ingredients TEXT DEFAULT '[]',
   dailyPizza BOOLEAN NOT NULL DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))

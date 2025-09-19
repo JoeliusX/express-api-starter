@@ -3,17 +3,11 @@ const express = require('express');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 
-//pizza version
-//const router = require('./Pizza/routes/router');
-//const swaggerSpec = require('./Pizza/config/swagger');
+const pizzaRouter = require('./Pizza/routes/pizzas');
+const pizzaSwaggerSpec = require('./Pizza/config/swagger');
 
-//ingredients version
-//const router = require('./Ingredients/routes/router');
-//const swaggerSpec = require('./Ingredients/config/swagger');
-
-//pizzaIngredients version
-const router = require('./PizzaIngredients/routes/router');
-const swaggerSpec = require('./PizzaIngredients/config/swagger');
+const ingredientRouter = require('./Ingredients/routes/ingredients');
+const ingredientSwaggerSpec = require('./Ingredients/config/swagger');
 
 const app = express();
 
@@ -21,39 +15,37 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // API routes
-app.use('/api', router);
+app.use('/api/pizzas', pizzaRouter);
+app.use('/api/ingredients', ingredientRouter);
 
-// Swagger UI pizza
-/*
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// 🔗 Fusionner les deux Swagger en un seul
+const combinedSwagger = {
+    openapi: '3.0.0',
+    info: {
+        title: 'Pizza + Ingredients API',
+        version: '1.0.0',
+    },
+    paths: {
+        ...pizzaSwaggerSpec.paths,
+        ...ingredientSwaggerSpec.paths
+    },
+    components: {
+        ...pizzaSwaggerSpec.components,
+        ...ingredientSwaggerSpec.components
+    }
+};
+
+// Swagger UI unique
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(combinedSwagger));
 app.get('/docs/swagger.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.send(swaggerSpec);
+    res.send(combinedSwagger);
 });
-*/
-
-// Swagger UI ingredient
-/*
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.get('/docs/swagger.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(swaggerSpec);
-});
-*/
-
-// Swagger UI pizzaIngredient
-
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.get('/docs/swagger.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(swaggerSpec);
-});
-
 
 // basic health-check
 app.get('/', (req, res) => res.json({ status: 'ok' }));
 
-// error handler (fallback)
+// error handler
 app.use((err, req, res, next) => {
     console.error(err);
     if (!res.headersSent) {
