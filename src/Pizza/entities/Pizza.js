@@ -52,7 +52,11 @@ class Pizza {
             db.all(sql, [], (err, rows) => {
                 if (err) return reject(err);
                 rows.forEach(row => {
-                    row.ingredients = JSON.parse(row.ingredients || "[]");
+                    try {
+                        row.ingredients = JSON.parse(row.ingredients || "[]");
+                    } catch {
+                        row.ingredients = [];
+                    }
                 });
                 resolve(rows);
             });
@@ -66,7 +70,11 @@ class Pizza {
             db.get(sql, [id], (err, row) => {
                 if (err) return reject(err);
                 if (row) {
-                    row.ingredients = JSON.parse(row.ingredients || "[]");
+                    try {
+                        row.ingredients = JSON.parse(row.ingredients || "[]");
+                    } catch {
+                        row.ingredients = [];
+                    }
                 }
                 resolve(row || null);
             });
