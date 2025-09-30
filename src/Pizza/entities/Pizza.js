@@ -53,7 +53,7 @@ class Pizza {
         }
     }
 
-    // Retrieve a pizza by its id
+    // Retrieve a pizza by its id including ingredients
     static async findById(id) {
         const sql = `SELECT * FROM pizzas WHERE id = ?`;
         return new Promise((resolve, reject) => {
@@ -64,7 +64,7 @@ class Pizza {
                 const ingSql = `
                     SELECT pi.ingredient_id, i.name
                     FROM pizza_ingredients pi
-                    JOIN ingredients i ON i.id = pi.ingredient_id
+                             JOIN ingredients i ON i.id = pi.ingredient_id
                     WHERE pi.pizza_id = ?
                 `;
                 db.all(ingSql, [id], (err2, rows) => {
@@ -158,19 +158,6 @@ class Pizza {
         return new Promise((resolve, reject) => {
             db.run(sql, [pizzaId, ingredientId], async function(err) {
                 if (err) return reject(err);
-                const updatedPizza = await Pizza.findById(pizzaId);
-                resolve(updatedPizza);
-            });
-        });
-    }
-
-    // Remove an ingredient from a pizza
-    static async removeIngredient(pizzaId, ingredientId) {
-        const sql = `DELETE FROM pizza_ingredients WHERE pizza_id = ? AND ingredient_id = ?`;
-        return new Promise((resolve, reject) => {
-            db.run(sql, [pizzaId, ingredientId], async function(err) {
-                if (err) return reject(err);
-                if (this.changes === 0) return resolve(null);
                 const updatedPizza = await Pizza.findById(pizzaId);
                 resolve(updatedPizza);
             });

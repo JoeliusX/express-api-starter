@@ -141,24 +141,6 @@ const router = express.Router();
  *         description: Ingredient added to pizza
  *       400:
  *         description: Invalid id
- *   delete:
- *     summary: Remove an ingredient from a pizza
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *       - in: path
- *         name: ingredientId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Ingredient removed from pizza
- *       400:
- *         description: Invalid id
  */
 
 // Validation rules
@@ -178,8 +160,7 @@ router.get('/:id', [param('id').isInt().withMessage('id must be an integer')], p
 router.put('/:id', [param('id').isInt().withMessage('id must be an integer'), ...createAndUpdateValidations], pizzaController.update);
 router.delete('/:id', [param('id').isInt().withMessage('id must be an integer')], pizzaController.delete);
 
-// Add/remove ingredient routes using table intermédiaire pizza_ingredients
+// Add ingredient route
 router.post('/:id/ingredients', [param('id').isInt(), body('ingredientId').isInt()], pizzaController.addIngredient);
-router.delete('/:id/ingredients/:ingredientId', [param('id').isInt(), param('ingredientId').isInt()], pizzaController.removeIngredient);
 
 module.exports = router;

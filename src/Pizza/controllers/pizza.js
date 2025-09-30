@@ -83,33 +83,8 @@ exports.addIngredient = async (req, res, next) => {
         const ingredient = await Ingredient.findById(ingredientId);
         if (!ingredient) return res.status(400).json({ error: 'Ingredient does not exist' });
 
-        await Pizza.addIngredient(pizzaId, ingredientId);
-
-        const pizza = await Pizza.findById(pizzaId);
-        pizza.ingredients = await Ingredient.findByPizzaId(pizzaId);
-
-        return res.status(200).json(pizza);
-    } catch (err) {
-        next(err);
-    }
-};
-
-// Remove an ingredient from a pizza
-exports.removeIngredient = async (req, res, next) => {
-    try {
-        const pizzaId = Number(req.params.id);
-        const ingredientId = Number(req.params.ingredientId);
-
-        if (Number.isNaN(pizzaId) || Number.isNaN(ingredientId)) {
-            return res.status(400).json({ error: 'Invalid id' });
-        }
-
-        const removed = await Pizza.removeIngredient(pizzaId, ingredientId);
-
-        if (!removed) return res.status(404).json({ error: 'Ingredient not found in pizza' });
-
-        const pizza = await Pizza.findById(pizzaId);
-        pizza.ingredients = await Ingredient.findByPizzaId(pizzaId);
+        // ⚡ Add ingredient using Pizza entity
+        const pizza = await Pizza.addIngredient(pizzaId, ingredientId);
 
         return res.status(200).json(pizza);
     } catch (err) {
@@ -135,8 +110,6 @@ exports.findOne = async (req, res, next) => {
 
         const pizza = await Pizza.findById(id);
         if (!pizza) return res.status(404).json({ error: 'Pizza not found' });
-
-        pizza.ingredients = await Ingredient.findByPizzaId(id);
 
         return res.status(200).json(pizza);
     } catch (err) {
